@@ -17,6 +17,13 @@ It is designed around the following paradigm:
 #### Templates and Examples
 - TODO
 
+#### Requirements
+opencv-python==3.4.0.12
+numpy==1.14.1
+scikit-image==0.13.1
+tqdm==4.23.4
+pandas==0.22.0
+
 ## Tasks
 - [ ] Clean up comments
 - [ ] Generate template workup(s)

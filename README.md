@@ -18,11 +18,11 @@ It is designed around the following paradigm:
 - TODO
 
 #### Requirements
-opencv-python==3.4.0.12
-numpy==1.14.1
-scikit-image==0.13.1
-tqdm==4.23.4
-pandas==0.22.0
+opencv-python==3.4.0.12<br>
+numpy==1.14.1<br>
+scikit-image==0.13.1<br>
+tqdm==4.23.4<br>
+pandas==0.22.0<br>
 
 ## Tasks
 - [ ] Clean up comments

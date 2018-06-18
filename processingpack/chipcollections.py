@@ -840,9 +840,12 @@ class AssaySeries:
 
         if not pattern:
             pattern = "*_{}*/*/StitchedImages/BGSubtracted_StitchedImg*.tif"
-    
-        p = lambda f: glob(os.path.join(root, pattern.format(f)))[0]
-        files = {(handle, desc): p(handle) for handle, desc in zip(file_handles, descriptors)}
+        
+        try:
+            p = lambda f: glob(os.path.join(root, pattern.format(f)))[0]
+            files = {(handle, desc): p(handle) for handle, desc in zip(file_handles, descriptors)}
+        except:
+            raise ValueError('Error parsing filenames for quantifications. Glob pattern is: {}'.format(pattern))
 
         self.load_quants(descriptors, files.values(), channel, exposure)
 

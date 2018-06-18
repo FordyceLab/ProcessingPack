@@ -40,11 +40,11 @@ class Experiment:
         self.operator = operator
         self.repoName = repoName
         self.repoRoot = Path(os.path.join(root, repoName))
-        self.__initializeLogger()
+        self._initializeLogger()
         logging.info('Experiment Initialized | {}'.format(self.__str__()))
 
 
-    def __initializeLogger(self):
+    def _initializeLogger(self):
         """
         Initializes the logger, which logs to both a file (>DEBUG) and the console (>INFO)
 

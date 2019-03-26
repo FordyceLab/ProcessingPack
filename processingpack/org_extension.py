@@ -1,3 +1,15 @@
+# title             : experiment.py
+# description       : Processing functions specific to microwell arrays
+# authors           : Daniel Mokhtari
+# credits           : 
+# date              : 20190326
+# version update    : 20190326
+# version           : 0.1.0
+# usage             : With permission from DM
+# python_version    : 3.6
+
+
+# General Python
 from copy import deepcopy
 
 import numpy as np
@@ -14,7 +26,12 @@ INTRA_TILE_SPACING = 63
 
 def calculateRotation(ul, ur):
     """
-    
+
+    Arguments:
+        (tuple) ul:
+        (tuple) ur:
+
+    Returns:
     
     """
     vec = np.array(ur)-np.array(ul)
@@ -28,6 +45,13 @@ def calculateRotation(ul, ur):
 def coordTransform(sourceImgShape, rotImgShape, xy, rot):
     """
     
+    Arguments:
+        () sourceImgShape:
+        () rotImgShape:
+        () xy: 
+        () rot:
+
+    Returns:
     
     """
     coord = np.array(xy)
@@ -43,6 +67,11 @@ def coordTransform(sourceImgShape, rotImgShape, xy, rot):
 def rotateImage(imgdata, org_corners):
     """
     
+    Arguments:
+        () imgdata:
+        (collections.namedtuple) org_corners:
+
+    Returns:
     
     """
     rotation = calculateRotation(org_corners.ul, org_corners.ur)
@@ -52,7 +81,12 @@ def rotateImage(imgdata, org_corners):
 
 def transformCorners(imgdata, rotimgdata, oc):
     """
-    
+    Arguments:
+        () imgdata:
+        () rotimgdata:
+        () oc:
+
+    Returns:
     
     """
     org_corners = exp.Device._corners(oc) 
@@ -65,6 +99,12 @@ def transformCorners(imgdata, rotimgdata, oc):
 def splitEdge(corners, num_arrs, x):
     """
     
+    Arguments:
+        () cornerscorners:
+        () num_arrs:
+        () x:
+
+    Returns:
     
     """
     if num_arrs == 0:
@@ -94,6 +134,11 @@ def splitEdge(corners, num_arrs, x):
 def getArrayPoints(edgeVertices, num_arrs):
     """
     
+    Arguments:
+        () edgeVertices:
+        () num_arrs:
+
+    Returns:
     
     """
     splitEdge_Corners = np.array(edgeVertices)
@@ -111,6 +156,11 @@ def getArrayPoints(edgeVertices, num_arrs):
 def getPartitions(rot_corners, subarray_dims):
     """
     
+    Arguments:
+        () rot_corners:
+        () subarray_dims:
+
+    Returns:
     
     """
     ul, ur, ll, lr = rot_corners
@@ -134,7 +184,11 @@ def getPartitions(rot_corners, subarray_dims):
 def readTiff(handle):
     """
     
-    
+    Arguments:
+        (str | pathlib.Path) handlehandle: tiff image file path
+
+    Returns:
+
     """
     with skimage.external.tifffile.TiffFile(str(handle)) as tif:
         data = tif.asarray()
@@ -144,6 +198,13 @@ def readTiff(handle):
 def readAndRotateImg(srcHandle, oc, subarray_dims, targetHandle = None):
     """
     
+    Arguments:
+        (str | pathlib.Path) srcHandle: tiff image file path
+        () oc:
+        () subarray_dims:
+        () targetHandle:
+
+    Returns:
     
     """
     srcImg = readTiff(srcHandle)
@@ -160,6 +221,12 @@ def readAndRotateImg(srcHandle, oc, subarray_dims, targetHandle = None):
 def getCorners(index, horizontalLines_t, verticalLines_t):
     """
     
+    Arguments:
+        () index:
+        () horizontalLines_t:
+        () verticalLines_t:
+
+    Returns:
     
     """
     col, row = index
@@ -183,6 +250,14 @@ def getCorners(index, horizontalLines_t, verticalLines_t):
 def showWell(chamberObject, arrayIDs, vmin = None, vmax = None, cmap = 'viridis_r'):
     """
     
+    Arguments:
+        () chamberObject:
+        () arrayIDs:
+        () vmin:
+        () vmax:
+        () cmap:
+
+    Returns:
     
     """
     pl.imshow(chamberObject.data, vmin = vmin, vmax = vmax, cmap = cmap)
@@ -195,7 +270,12 @@ def showWell(chamberObject, arrayIDs, vmin = None, vmax = None, cmap = 'viridis_
 def showContours(data, level):
     """
     
-    
+    Arguments:
+        () data:
+        () level:
+
+    Returns:
+
     """
     r = data
     # Find contours at a constant value of 0.8
@@ -216,6 +296,17 @@ def showContours(data, level):
 def processTiles(rasterPath, e, pinlist, divisions, tile_dims, subarray_dims, channel, exposure):
     """
     
+    Arguments:
+        () rasterPath:
+        () e:
+        () pinlist:
+        () divisions:
+        () tile_dims:
+        () subarray_dims:
+        () channel:
+        () exposure:
+
+    Returns:
     
     """
     chamber = 0

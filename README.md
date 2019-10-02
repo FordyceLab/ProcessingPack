@@ -13,6 +13,8 @@ It is designed around the following paradigm:
 
 ## Dev Notes:
 - Check package requirements: use `pipreqs` on directory containing runpack 
-- Install: `pip install -e git+https://github.com/FordyceLab/RunPack.git#egg=processingpack`
-    + Note `-e` makes package editable
+- Local install
+ - Download the repo and unzip
+ - Change directory to the download path`cd /repo-download_path`
+ - Pip install in virtual env with `pip install -e .`
 - Register venv with Jupyter: `python -m ipykernel install --user --name=processingpack`

@@ -6,7 +6,7 @@
 # version update    : 20180615
 # version           : 0.1.0
 # usage             : With permission from DM
-# python_version    : 3.6
+# python_version    : 3.7
 
 
 # General Python

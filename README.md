@@ -11,15 +11,10 @@ It is designed around the following paradigm:
  		- *Chamber*: the primary reaction chamber
  		- *Button*: the contact area of the button on the slide
 
-### Architecture
-- TODO
-
-#### Templates and Examples
-- TODO
-
-#### Requirements
-opencv-python==3.4.0.12<br>
-numpy==1.14.1<br>
-scikit-image==0.13.1<br>
-tqdm==4.23.4<br>
-pandas==0.22.0<br>
+## Dev Notes:
+- Check package requirements: use `pipreqs` on directory containing runpack 
+- Local install
+ - Download the repo and unzip
+ - Change directory to the download path`cd /repo-download_path`
+ - Pip install in virtual env with `pip install -e .`
+- Register venv with Jupyter: `python -m ipykernel install --user --name=processingpack`

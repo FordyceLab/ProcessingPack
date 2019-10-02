@@ -370,6 +370,8 @@ class Stamp:
     
     chamberrad = 33
     outerchamberbound = 5
+    circlePara1Index = 50
+    circlePara2Index = 40
     
     def __init__(self, img, center, slice, index, id):
         """
@@ -518,7 +520,7 @@ class Stamp:
         
         return {'mask': ~mask, 'intensities': intensities, 'center': center, 'radius': int(radius)}
 
-
+    
     def findChamber(self):
         """
         Uses Hough transform to find a chamber.
@@ -544,19 +546,19 @@ class Stamp:
         maxRad = minRad + outerChamberBound
 
         # find circles
-        circles = cv2.HoughCircles(cimg,cv2.HOUGH_GRADIENT,2,10,param1=50,param2=40, minRadius=minRad, maxRadius=maxRad)
-
+        circles = cv2.HoughCircles(cimg,cv2.HOUGH_GRADIENT,2,10,param1=self.circlePara1Index,param2=self.circlePara2Index, minRadius=minRad, maxRadius=maxRad)
+        
+        circlePara1Index = self.circlePara1Index
         # If no circles found, loosen gradient threshold
-        circlePara1Index = 50
         while type(circles) is not np.ndarray and circlePara1Index > 5:
-            circles = cv2.HoughCircles(cimg,cv2.HOUGH_GRADIENT,2,10,param1=circlePara1Index,param2=40,minRadius=minRad+1,maxRadius=maxRad+2)
+            circles = cv2.HoughCircles(cimg,cv2.HOUGH_GRADIENT,2,10,param1=circlePara1Index, param2=self.circlePara2Index, minRadius=minRad+1, maxRadius=maxRad+2)
             circlePara1Index -= 1
         
         # If still none found, return a blank chamber (failed)
         if not np.any(circles): 
             m = 'No chamber border found for chamber {}'.format(str(self.index))
             warnings.warn(m)
-            self.chamber = Chamber.BlankChamber
+            self.chamber = Chamber.BlankChamber()
             return
         
         # Else, round the resulting circle params
@@ -578,7 +580,6 @@ class Stamp:
         # Calculate the final parameters
         p = Stamp.circularSubsection(img, (int(bestCircle[0]), int(bestCircle[1])), bestCircle[2])
         self.chamber = Chamber(img, p['mask'], p['center'], p['radius'])
-
 
 
     def findButton(self):

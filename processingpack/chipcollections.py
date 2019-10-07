@@ -94,7 +94,11 @@ class ChipSeries:
             r = Path(root)
             img_files = [i for i in list(r.glob(glob_pattern)) if not 'ChamberBorders'in i.stem or 'Summary' in i.stem]
             img_paths = [Path(os.path.join(r.parent, img)) for img in img_files]
-            record = {int(path.stem.split('_')[-1]):path for path in img_paths}
+            try:
+                record = {int(path.stem.split('_')[-1]):path for path in img_paths}
+            except ValueError:
+                logging.info('WARNING: Coerced image indexes to floats')
+                record = {float(path.stem.split('_')[-1]):path for path in img_paths}
             chipParams = (self.device.corners, self.device.pinlist, channel, exposure)
             self.chips = {identifier:ChipImage(self.device, source, {self.series_indexer:identifier}, *chipParams) for identifier, source in record.items()}
             

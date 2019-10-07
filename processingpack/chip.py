@@ -3,7 +3,7 @@
 # authors           : Daniel Mokhtari
 # credits           : Craig Markin
 # date              : 20180615
-# version update    : 20180615
+# version update    : 20191007
 # version           : 0.1.0
 # usage             : With permission from DM
 # python_version    : 3.7
@@ -411,9 +411,11 @@ class Stamp:
             None
         
         """
-
-        p = Stamp.circularSubsection(self.data, center, radius)
-        self.chamber = Chamber(self.data, p['mask'], p['center'], p['radius'])
+        if center != center:
+            self.chamber = Chamber.BlankChamber()
+        else:
+            p = Stamp.circularSubsection(self.data, center, radius)
+            self.chamber = Chamber(self.data, p['mask'], p['center'], p['radius'])
 
 
     def defineButton(self, center, radius, annulus_radii):
@@ -475,10 +477,7 @@ class Stamp:
             (np.ndarray) the annotated stamp image array
         
         """
-        # stamptype: ('none','chamber', 'button')
-        if stamptype == 'none':
-            index = '{}.{} | {}'.format(self.index[0], self.index[1], self.id)
-            return annotateStamp(self.data, None, index, '')
+        # stamptype: ('chamber', 'button')
         if stamptype == 'chamber':
             circles = [[self.chamber.radius, self.chamber.center]]
             index = '{}.{} | {}'.format(self.index[0], self.index[1], self.id)
@@ -520,7 +519,7 @@ class Stamp:
         
         return {'mask': ~mask, 'intensities': intensities, 'center': center, 'radius': int(radius)}
 
-    
+
     def findChamber(self):
         """
         Uses Hough transform to find a chamber.
@@ -582,6 +581,7 @@ class Stamp:
         self.chamber = Chamber(img, p['mask'], p['center'], p['radius'])
 
 
+
     def findButton(self):
         """
         Button finding algorithm using Craig's "grid search" optimization. 
@@ -614,6 +614,7 @@ class Stamp:
         maxI = 0
         bestSpotParams = None
         fitRadius = radius
+        localBGRadius = radius *2
 
         boundingInset = int(tileWidth*boundingInsetRatio)
 
@@ -625,13 +626,26 @@ class Stamp:
                 if summedI > maxI: 
                     maxI = deepcopy(summedI)
                     bestSpotParams = deepcopy(features)
+        
+        #If the image is perfectly black in the bounding region, it's necessary to just pick the center position as a placeholder
+        if not bestSpotParams:
+            warnmsg = 'No intensity observed for chamber {}'.format(self.index)
+            warnings.warn(warnmsg)
+            bestSpotParams = deepcopy(Stamp.circularSubsection(imagestamp, (int(tileWidth/2), int(tileHeight/2)), fitRadius))
+            buttonBound = Stamp.circularSubsection(imagestamp, bestSpotParams['center'], radius) 
+            outerBound =  Stamp.circularSubsection(imagestamp, bestSpotParams['center'], localBGRadius) #The circles can extend past the edge of the image
+            b_mask = buttonBound['mask']
+            o_mask = outerBound['mask']
+            annulus_mask = ~(o_mask^b_mask)
+            self.button = Button(imagestamp, b_mask, annulus_mask, buttonBound['center'], buttonBound['radius'], (buttonBound['radius'], outerBound['radius']))
+            return
 
         # Fine-tuning center position (dense local array for search grid) by maximizing summed intensity
         for xIncrement in np.linspace(bestSpotParams['center'][0]-refiningRange, bestSpotParams['center'][0]+refiningRange, num = 2*refiningRange, dtype = int):
             for yIncrement in np.linspace(bestSpotParams['center'][1]-refiningRange, bestSpotParams['center'][1]+refiningRange, num = 2*refiningRange, dtype = int):
                 features = Stamp.circularSubsection(imagestamp, (xIncrement, yIncrement), fitRadius)
                 summedI = np.nansum(features['intensities'])
-                if summedI > maxI: 
+                if summedI > maxI:
                     maxI = deepcopy(summedI)
                     bestSpotParams = deepcopy(features)
 
@@ -659,7 +673,6 @@ class Stamp:
                 maxI = deepcopy(maxIAtRadius)
                 bestSpotParams = deepcopy(bestParamsAtRadius)
         
-        localBGRadius = radius *2
 
         #If radius fitting didn't work, just go with the parameters from before    
         buttonBound = Stamp.circularSubsection(imagestamp, bestSpotParams['center'], radius) 
@@ -892,13 +905,14 @@ def annotateStamp(data, circles, index, val):
 
     working = deepcopy(data)
     d = cv2.copyMakeBorder(deepcopy(data), 1, 1, 1, 1, cv2.BORDER_CONSTANT, value = 60000)
-    cv2.putText(d, index, (2, 12), cv2.FONT_HERSHEY_PLAIN, 0.5, 60000) #Index
-    cv2.putText(d, val, (2, len(d) - 4), cv2.FONT_HERSHEY_PLAIN, 0.5, 60000) #Index
-    if not circles:
-        return d
+    cv2.putText(d, index, (2, 12), cv2.FONT_HERSHEY_PLAIN, 0.8, 60000) #Index
+    cv2.putText(d, val, (2, len(d) - 4), cv2.FONT_HERSHEY_PLAIN, 0.7, 60000) #Index
     for rad, center in circles:
-        if rad == rad and center == center:
+        if center != center:
+            pass
+        else:
             cv2.circle(d, center, rad+2, 0, thickness = 1)
             cv2.circle(d, center, rad+1, (2**16)-1, thickness = 1)
             cv2.circle(d, center, rad,0, thickness = 1)
     return d
+

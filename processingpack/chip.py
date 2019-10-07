@@ -6,14 +6,14 @@
 # version update    : 20180615
 # version           : 0.1.0
 # usage             : With permission from DM
-# python_version    : 3.6
+# python_version    : 3.7
 
 # General Python
 import gc
 import warnings
 from copy import deepcopy
 from collections import namedtuple
-import experiment
+from processingpack import experiment
 
 import numpy as np
 import numpy.ma as ma

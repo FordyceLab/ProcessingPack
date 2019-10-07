@@ -3,10 +3,10 @@
 # authors           : Daniel Mokhtari
 # credits           : Craig Markin
 # date              : 20180615
-# version update    : 20180615
+# version update    : 20191001
 # version           : 0.1.0
 # usage             : With permission from DM
-# python_version    : 3.6
+# python_version    : 3.7
 
 # General Python
 import os
@@ -19,7 +19,7 @@ import pandas as pd
 from tqdm import tqdm
 from skimage import external
 
-from chip import ChipImage
+from processingpack.chip import ChipImage
 
 
 
@@ -390,12 +390,12 @@ class Timecourse(ChipSeries):
         logging.debug('Timecourse Created | {}'.format(self.__str__()))
 
 
-    def process(self, chamber_reference, featuretype = 'chamber'):
+    def process(self, reference, featuretype = 'chamber'):
         """
         Map chamber positions (stamp, feature mapping) from the provided reference
 
         Arguments:
-            (ChipImage) chamber_reference: reference ChipImage for chamber position mapping
+            (ChipImage) chamber_reference: reference ChipImage for chamber or button position mapping
             (str) featuretype: type of feature to map ('chamber' | 'button' | 'all')
 
         Returns:
@@ -403,24 +403,24 @@ class Timecourse(ChipSeries):
 
         """
 
-        self.map_from(chamber_reference, mapto_args = {'features': featuretype})
+        self.map_from(reference, mapto_args = {'features': featuretype})
 
 
-    def process_summarize(self, chamber_reference):
+    def process_summarize(self, reference):
         """
         
         Process (stamp, positions and features mapping) and summarize the resulting image data
         as a Pandas DataFrame
         
         Arguments:
-            (ChipImage) chamber_reference: reference ChipImage for chamber position mapping
+            (ChipImage) reference: reference ChipImage for chamber ro button position mapping
 
         Returns:
             (pd.DataFrame) DataFrame of chip feature information
 
         """
 
-        self.process(chamber_reference)
+        self.process(reference)
         df =  self.summarize()
         return df
 
@@ -523,7 +523,7 @@ class ChipQuant:
         else:
             reference.mapto(self.chip, features = mapped_features)
         self.processed = True
-        logging.debug('Buttons Processed | {}'.format(self.__str__()))
+        logging.debug('Features Processed | {}'.format(self.__str__()))
 
 
     def summarize(self):
@@ -542,7 +542,7 @@ class ChipQuant:
         if self.processed:
             return self.chip.summarize()
         else:
-            raise ValueError('Must first Process ChipQuant')
+            raise ValueError('Must first process ChipQuant')
 
 
     def process_summarize(self, reference = None, process_kwrds = {}):
@@ -631,7 +631,7 @@ class Assay:
         """
 
         self.device = device # Device object
-        self.attrs = attrs # general metadata fro the chip
+        self.attrs = attrs # general metadata for the chip
         self.description = description
         self.series = None
         self.quants = []
@@ -942,3 +942,158 @@ class AssaySeries:
 
     def __str__(self):
         return ('Assays: {}, Device: {}, Attrs: {}'.format(list(self.assays.keys()), str((self.device.setup, self.device.dname)), self.attrs))
+
+
+
+
+class ButtonChamberAssaySeries:
+    # This class permits simultaneous kinetic imaging and analysis of chambers and buttons
+    # It consists of a collection of kinetic imaging (one or more timecourses) in one or more channels
+
+    def __init__(self, device, descriptions, chamber_ref, button_ref, channels, attrs = None, assays_attrs = []):
+        """
+        
+        """
+
+        self.device = device
+        self.channels = channels
+        self.assays = OrderedDict([((description, channel), TurnoverAssay(device, description)) for description in descriptions for channel in channels])
+        self.chamber_ref = chamber_ref
+        self.button_ref = button_ref
+        self.root = None
+        self.attrs = attrs
+        logging.debug('AssaySeries Created | {}'.format(self.__str__()))
+        logging.debug('AssaySeries Chamber Reference Set | {}'.format(chamber_ref.__str__()))
+        logging.debug('AssaySeries Button Reference Set | {}'.format(button_ref.__str__()))
+
+
+    def parse_kineticsFolders(self, root, file_handles, descriptors, channel, exposure, pattern = None):
+        """
+        Walks down directory tree, matches the passed file handles to the Timecourse descriptors,
+        and loads kinetic imaging data. Default pattern is "*_{}*/*/StitchedImages", with {}
+        file_handle
+
+        Arguments:
+            (str) root: path to directory Three levels above the StitchedImages folders (dir 
+                above unique assay folders)
+            (list | tuple) file_handles: unique file handles to match to dirs in the root.
+            (list | tuple) descriptors: unique kinetic imaging descriptors, order-matched to
+                the file_handles
+            (str) channel: imaging channel
+            (int) exposure: exposure time (ms)
+            (bool) pattern: custom UNIX-style pattern to match when parsing dirs
+
+        Returns:
+            None
+
+        """
+
+        self.root = root
+        if not pattern:
+            pattern = "*_{}*/{}/StitchedImages"
+    
+        p = lambda f: glob(os.path.join(root, pattern.format(f, channel)))[0]
+        files = {(handle, desc, channel): p(handle) for handle, desc in zip(file_handles, descriptors)}
+
+        self.load_kin(descriptors, files.values(), channel, exposure)
+
+    def load_kin(self, descriptions, paths, channel, exposure): 
+        """
+        Loads kinetic imaging and descriptions into the ButtonChamberAssaySeries.
+            None
+
+        """
+
+        len_series = len(self.assays)
+        len_descriptions = len(descriptions)
+
+        if len_descriptions != len_series:
+            raise ValueError('Descriptions and series of different lengths. Number of assays and descriptions must match.')
+        kin_refs = list(zip(descriptions, paths, [channel]*len_series, [exposure]*len_series))
+        for desc, p, chan, exp in kin_refs:
+            t = Timecourse(self.device, desc)
+            t.load_files(p, chan, exp)
+            self.assays[(desc, chan)].series = t
+
+
+    def process_kinetics(self, subset = None, featuretype = 'chamber', save_summary = True, save_images = True, low_mem = True):
+        """
+        Processes the timecourses and saves summary images for each of, or a subset of,
+        the assays.
+
+        Arguments:
+            (list | tuple) subset: list of assay descriptors (a subset of the assay dictionary keys)
+            (bool) low_mem: flag to delete and garbage collect stamp data of all ChipImages
+                after summarization and export
+
+        Returns:
+            None
+        
+        """
+
+        if not subset:
+            subset = self.assays.keys()
+        for key in subset:
+            s = self.assays[key].series
+            if featuretype == 'chamber':
+                try:
+                    s.process(self.chamber_ref)
+                except:
+                    raise ValueError('No chamber ref provided (did you provice button ref instead?)')
+            if featuretype == 'button':
+                try:
+                    s.process(self.button_ref)
+                except:
+                    raise ValueError('No button ref provided (did you provice chamber ref instead?)')
+            if save_summary:
+                s.save_summary()
+            if save_images:
+                s.save_summary_images(featuretype = featuretype)
+            if low_mem:
+                s._delete_stamps()
+
+
+    def summarize(self):
+        """
+        Summarizes an ButtonChamberAssaySeries as a Pandas DataFrame.
+        
+        Arguments:
+            None
+
+        Returns:
+            (pd.DataFrame) summary of the ButtonChamberAssaySeries
+
+        """
+
+        summaries = []
+        for tc in  self.assays.values():
+            s = tc.merge_summarize()
+            s['series_index'] = tc.description
+            summaries.append(s)
+        return pd.concat(summaries).sort_index()
+
+    
+    def save_summary(self, outPath = None):
+        """
+        Saves a CSV summary of the ButtonChamberAssaySeries to the specified path.
+
+        Arguments:
+
+        Returns:
+            None
+
+        """
+
+        if not outPath:
+            outPath = self.chamber_root
+        df = self.summarize()
+        fn = '{}_{}.csv.bz2'.format(self.device.dname, 'ButtonChamberAssaySeries_Analysis')
+        df.to_csv(os.path.join(outPath, fn), compression = 'bz2')
+
+
+    def __str__(self):
+        return ('Assays: {}, ..., Device: {}, Channels: {}'.format(list(self.assays.keys())[0], str((self.device.setup, self.device.dname))))
+
+
+    def _repr_pretty_(self, p, cycle = True):
+        p.text('<{}>'.format(self.__str__()))

@@ -100,7 +100,9 @@ class ChipSeries:
                 logging.info('WARNING: Coerced image indexes to floats')
                 record = {float(path.stem.split('_')[-1]):path for path in img_paths}
             chipParams = (self.device.corners, self.device.pinlist, channel, exposure)
-            self.chips = {identifier:ChipImage(self.device, source, {self.series_indexer:identifier}, *chipParams) for identifier, source in record.items()}
+            self.chips = {identifier:ChipImage(self.device, source, 
+                {self.series_indexer:identifier}, *chipParams) for identifier, source in record.items()
+            }
             
             keys = list(self.chips.keys())
             logging.debug('Loaded Series | Root: {}/, IDs: {}'.format(root, keys))
@@ -612,7 +614,8 @@ class ChipQuant:
     
 
     def __str__(self):
-        return ('Description: {}, Device: {}'.format(self.description, str((self.device.setup, self.device.dname))))
+        return ('Description: {}, Device: {}'.format(
+            self.description, str((self.device.setup, self.device.dname))))
 
 
 class Assay:
@@ -781,7 +784,7 @@ class AssaySeries:
         
         if len(descriptions) == 1:
             descriptions = self.assays.keys()
-            paths = paths * len_series
+            paths = list(paths) * len_series
         
         bq_refs = list(zip(descriptions, paths, [channel]*len_series, [exposure]*len_series))
         for desc, p, chan, exp in bq_refs:
@@ -941,7 +944,8 @@ class AssaySeries:
 
 
     def __str__(self):
-        return ('Assays: {}, Device: {}, Attrs: {}'.format(list(self.assays.keys()), str((self.device.setup, self.device.dname)), self.attrs))
+        return ('Assays: {}, Device: {}, Attrs: {}'.format(
+            list(self.assays.keys()), str((self.device.setup, self.device.dname)), self.attrs))
 
 
 
@@ -957,7 +961,8 @@ class ButtonChamberAssaySeries:
 
         self.device = device
         self.channels = channels
-        self.assays = OrderedDict([((description, channel), TurnoverAssay(device, description)) for description in descriptions for channel in channels])
+        self.assays = OrderedDict([((description, channel), TurnoverAssay(device, description)) 
+            for description in descriptions for channel in channels])
         self.chamber_ref = chamber_ref
         self.button_ref = button_ref
         self.root = None
@@ -1092,7 +1097,8 @@ class ButtonChamberAssaySeries:
 
 
     def __str__(self):
-        return ('Assays: {}, ..., Device: {}, Channels: {}'.format(list(self.assays.keys())[0], str((self.device.setup, self.device.dname))))
+        return ('Assays: {}, ..., Device: {}, Channels: {}'.format(
+            list(self.assays.keys())[0], str((self.device.setup, self.device.dname))))
 
 
     def _repr_pretty_(self, p, cycle = True):

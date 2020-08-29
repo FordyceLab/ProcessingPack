@@ -41,7 +41,7 @@ class ChipSeries:
         self.device = device # Device object
         self.attrs = attrs # general metadata fro the chip
         self.series_indexer = series_index
-        self.description = description
+        self.description = ""
         self.chips = {}
         self.series_root = None
         logging.debug('ChipSeries Created | {}'.format(self.__str__()))

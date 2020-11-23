@@ -2,7 +2,7 @@
 !["One Piece at a Time"](/resources/chip-working.png)
 
 ## Overview
-ProcessingPack is a set of classes and functions to execute MITOMI image processing (feature finding and quantification). 
+ProcessingPack is a set of classes and functions to execute HT-MEK image processing (feature finding and quantification). 
 
 It is designed around the following paradigm:
  - Imaging of a *ChipImage* is *single* or *series*
